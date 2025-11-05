@@ -55,6 +55,26 @@
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
         }
 
+        .wake-lock-status {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 0.8rem;
+            opacity: 0.6;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 5px 10px;
+            border-radius: 15px;
+            display: none;
+        }
+
+        .wake-lock-active {
+            color: #4caf50;
+        }
+
+        .wake-lock-inactive {
+            color: #ff9800;
+        }
+
         @media (max-width: 768px) {
             .time-container {
                 padding: 10px;
@@ -86,6 +106,10 @@
     <div class="time-container">
         <div class="date-display" id="dateDisplay"></div>
         <div class="time-display" id="timeDisplay"></div>
+    </div>
+    
+    <div class="wake-lock-status" id="wakeLockStatus">
+        🔒 画面オフ防止
     </div>
     
     <div class="info">
@@ -143,15 +167,95 @@
             }
         });
 
-        // ページ読み込み完了時にフルスクリーン表示の説明を短時間表示
-        window.addEventListener('load', function() {
+        // Wake Lock API で画面を消さないようにする
+        let wakeLock = null;
+        const wakeLockStatus = document.getElementById('wakeLockStatus');
+
+        function updateWakeLockStatus(isActive) {
+            if (wakeLockStatus) {
+                wakeLockStatus.style.display = 'block';
+                wakeLockStatus.className = `wake-lock-status ${isActive ? 'wake-lock-active' : 'wake-lock-inactive'}`;
+                wakeLockStatus.textContent = isActive ? '🔒 画面オフ防止中' : '⚠️ 画面オフ防止無効';
+                
+                // 5秒後に非表示
+                setTimeout(() => {
+                    if (wakeLockStatus) {
+                        wakeLockStatus.style.display = 'none';
+                    }
+                }, 5000);
+            }
+        }
+
+        async function requestWakeLock() {
+            if ('wakeLock' in navigator) {
+                try {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Wake Lock が有効になりました');
+                    updateWakeLockStatus(true);
+                    
+                    // Wake Lock が解除された時のイベントリスナー
+                    wakeLock.addEventListener('release', () => {
+                        console.log('Wake Lock が解除されました');
+                        updateWakeLockStatus(false);
+                        wakeLock = null;
+                    });
+                } catch (err) {
+                    console.log('Wake Lock の取得に失敗:', err);
+                    updateWakeLockStatus(false);
+                }
+            } else {
+                console.log('このブラウザはWake Lock APIに対応していません');
+                // フォールバック: 定期的な画面アクティビティ
+                startScreenKeepAlive();
+            }
+        }
+
+        // Wake Lock API が使えない場合のフォールバック
+        function startScreenKeepAlive() {
+            // 5分ごとに小さな要素を点滅させて画面を「アクティブ」に保つ
+            setInterval(() => {
+                const dummy = document.createElement('div');
+                dummy.style.position = 'absolute';
+                dummy.style.opacity = '0.001';
+                dummy.style.left = '-1px';
+                dummy.style.top = '-1px';
+                dummy.style.width = '1px';
+                dummy.style.height = '1px';
+                document.body.appendChild(dummy);
+                
+                setTimeout(() => {
+                    if (dummy.parentNode) {
+                        dummy.parentNode.removeChild(dummy);
+                    }
+                }, 100);
+            }, 300000); // 5分
+        }
+
+        // ページが再び表示された時にWake Lockを再取得
+        document.addEventListener('visibilitychange', async () => {
+            if (wakeLock !== null && document.visibilityState === 'visible') {
+                await requestWakeLock();
+            }
+        });
+
+        // ページ読み込み完了時の処理
+        window.addEventListener('load', async function() {
             const info = document.querySelector('.info');
             const originalText = info.textContent;
-            info.textContent = '100ミリ秒精度 | ダブルクリックでフルスクリーン';
+            
+            // Wake Lock を開始
+            await requestWakeLock();
+            
+            // 情報表示の更新
+            let infoText = '100ミリ秒精度 | ダブルクリックでフルスクリーン';
+            if ('wakeLock' in navigator) {
+                infoText += ' | 画面オフ防止中';
+            }
+            info.textContent = infoText;
             
             setTimeout(() => {
                 info.textContent = originalText;
-            }, 3000);
+            }, 4000);
         });
     </script>
 </body>
