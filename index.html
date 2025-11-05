@@ -26,6 +26,8 @@
         .time-container {
             text-align: center;
             padding: 20px;
+            position: relative;
+            z-index: 10;
         }
 
         .date-display {
@@ -58,6 +60,7 @@
             opacity: 0.7;
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
             transition: color 0.3s ease-out;
+            z-index: 20;
         }
 
         .wake-lock-status {
@@ -70,6 +73,7 @@
             padding: 5px 10px;
             border-radius: 15px;
             display: none;
+            z-index: 20;
         }
 
         .wake-lock-active {
@@ -84,29 +88,14 @@
         .floating-shape {
             position: absolute;
             font-size: 2rem;
-            opacity: 0.15;
+            opacity: 0.25;
             pointer-events: none;
             animation: float linear infinite;
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
-            z-index: -1;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+            z-index: 1;
         }
 
-        @keyframes float {
-            0% {
-                transform: translateY(100vh) rotate(0deg) scale(0.5);
-                opacity: 0;
-            }
-            10% {
-                opacity: 0.15;
-            }
-            90% {
-                opacity: 0.15;
-            }
-            100% {
-                transform: translateY(-10vh) rotate(360deg) scale(1.2);
-                opacity: 0;
-            }
-        }
+
 
         /* レスポンシブ対応 */
         @media (max-width: 768px) {
@@ -310,16 +299,55 @@
             const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
             shape.textContent = randomShape;
             
-            // ランダムな開始位置（横方向）
-            const startX = Math.random() * window.innerWidth;
-            shape.style.left = startX + 'px';
+            // 画面の4方向からランダムに選択（上下左右）
+            const directions = ['top', 'bottom', 'left', 'right'];
+            const direction = directions[Math.floor(Math.random() * directions.length)];
             
-            // ランダムなアニメーション時間（10-25秒）
-            const duration = 10 + Math.random() * 15;
+            let startX, startY, endX, endY;
+            
+            // 方向に応じて開始位置と終了位置を設定
+            switch (direction) {
+                case 'top': // 上から下へ
+                    startX = Math.random() * window.innerWidth;
+                    startY = -50;
+                    endX = startX + (Math.random() - 0.5) * 300; // 横にも少しずれる
+                    endY = window.innerHeight + 50;
+                    break;
+                case 'bottom': // 下から上へ
+                    startX = Math.random() * window.innerWidth;
+                    startY = window.innerHeight + 50;
+                    endX = startX + (Math.random() - 0.5) * 300;
+                    endY = -50;
+                    break;
+                case 'left': // 左から右へ
+                    startX = -50;
+                    startY = Math.random() * window.innerHeight;
+                    endX = window.innerWidth + 50;
+                    endY = startY + (Math.random() - 0.5) * 300; // 縦にも少しずれる
+                    break;
+                case 'right': // 右から左へ
+                    startX = window.innerWidth + 50;
+                    startY = Math.random() * window.innerHeight;
+                    endX = -50;
+                    endY = startY + (Math.random() - 0.5) * 300;
+                    break;
+            }
+            
+            // 初期位置を設定
+            shape.style.left = startX + 'px';
+            shape.style.top = startY + 'px';
+            
+            // ランダムなアニメーション時間（15-30秒でよりゆっくり）
+            const duration = 15 + Math.random() * 15;
             shape.style.animationDuration = duration + 's';
             
-            // ランダムな横方向の動き
-            const endX = startX + (Math.random() - 0.5) * 400; // -200px～+200px
+            // 移動距離を計算
+            const deltaX = endX - startX;
+            const deltaY = endY - startY;
+            
+            // ランダムな回転
+            const rotationDegrees = 360 + Math.random() * 720; // 1-3回転
+            
             const keyframeName = `float-${Date.now()}-${Math.random()}`;
             
             // カスタムキーフレームを動的に作成
@@ -327,17 +355,17 @@
             style.textContent = `
                 @keyframes ${keyframeName} {
                     0% {
-                        transform: translateX(0) translateY(100vh) rotate(0deg) scale(0.5);
+                        transform: translate(0, 0) rotate(0deg) scale(0.3);
                         opacity: 0;
                     }
-                    10% {
-                        opacity: 0.15;
+                    15% {
+                        opacity: 0.25;
                     }
-                    90% {
-                        opacity: 0.15;
+                    85% {
+                        opacity: 0.25;
                     }
                     100% {
-                        transform: translateX(${endX - startX}px) translateY(-10vh) rotate(${360 + Math.random() * 360}deg) scale(${1 + Math.random() * 0.5});
+                        transform: translate(${deltaX}px, ${deltaY}px) rotate(${rotationDegrees}deg) scale(${0.8 + Math.random() * 0.6});
                         opacity: 0;
                     }
                 }
@@ -348,7 +376,7 @@
             // ランダムな色味（現在の色相ベース）
             const currentHue = (colorTime * colorSpeed) % 360;
             const shapeHue = (currentHue + Math.random() * 120 - 60) % 360;
-            shape.style.color = `hsl(${shapeHue}, 60%, 70%)`;
+            shape.style.color = `hsl(${shapeHue}, 70%, 75%)`;
             
             document.body.appendChild(shape);
             activeShapes.push({element: shape, style: style});
