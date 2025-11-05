@@ -86,13 +86,13 @@
 
         /* 背景アニメーション図形 */
         .floating-shape {
-            position: absolute;
-            font-size: 2rem;
-            opacity: 0.25;
+            position: fixed;
+            font-size: 3rem;
+            opacity: 0.6;
             pointer-events: none;
-            animation: float linear infinite;
-            text-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
-            z-index: 1;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+            z-index: 5;
+            color: #ffffff;
         }
 
 
@@ -337,46 +337,51 @@
             shape.style.left = startX + 'px';
             shape.style.top = startY + 'px';
             
-            // ランダムなアニメーション時間（15-30秒でよりゆっくり）
-            const duration = 15 + Math.random() * 15;
-            shape.style.animationDuration = duration + 's';
+            // ランダムなアニメーション時間（10-20秒）
+            const duration = 10 + Math.random() * 10;
             
             // 移動距離を計算
             const deltaX = endX - startX;
             const deltaY = endY - startY;
             
             // ランダムな回転
-            const rotationDegrees = 360 + Math.random() * 720; // 1-3回転
+            const rotationDegrees = 360 + Math.random() * 360; // 1-2回転
             
-            const keyframeName = `float-${Date.now()}-${Math.random()}`;
+            const keyframeName = `float-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
             
             // カスタムキーフレームを動的に作成
             const style = document.createElement('style');
             style.textContent = `
                 @keyframes ${keyframeName} {
                     0% {
-                        transform: translate(0, 0) rotate(0deg) scale(0.3);
+                        transform: translate(0px, 0px) rotate(0deg) scale(0.5);
                         opacity: 0;
                     }
-                    15% {
-                        opacity: 0.25;
+                    10% {
+                        opacity: 0.6;
                     }
-                    85% {
-                        opacity: 0.25;
+                    90% {
+                        opacity: 0.6;
                     }
                     100% {
-                        transform: translate(${deltaX}px, ${deltaY}px) rotate(${rotationDegrees}deg) scale(${0.8 + Math.random() * 0.6});
+                        transform: translate(${deltaX}px, ${deltaY}px) rotate(${rotationDegrees}deg) scale(1.2);
                         opacity: 0;
                     }
                 }
             `;
             document.head.appendChild(style);
-            shape.style.animationName = keyframeName;
             
-            // ランダムな色味（現在の色相ベース）
-            const currentHue = (colorTime * colorSpeed) % 360;
-            const shapeHue = (currentHue + Math.random() * 120 - 60) % 360;
-            shape.style.color = `hsl(${shapeHue}, 70%, 75%)`;
+            // アニメーションプロパティを設定
+            shape.style.animationName = keyframeName;
+            shape.style.animationDuration = duration + 's';
+            shape.style.animationTimingFunction = 'linear';
+            shape.style.animationIterationCount = '1';
+            shape.style.animationFillMode = 'forwards';
+            
+            // よりはっきりした色味
+            const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7', '#dda0dd', '#98d8c8', '#ffd93d', '#6c5ce7', '#a29bfe'];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            shape.style.color = randomColor;
             
             document.body.appendChild(shape);
             activeShapes.push({element: shape, style: style});
@@ -401,14 +406,14 @@
             if (activeShapes.length < minShapes) {
                 createFloatingShape();
             }
-            // ランダムに新しい図形を追加（25%の確率）
-            else if (activeShapes.length < maxShapes && Math.random() < 0.25) {
+            // ランダムに新しい図形を追加（50%の確率に上げる）
+            else if (activeShapes.length < maxShapes && Math.random() < 0.5) {
                 createFloatingShape();
             }
         }
 
-        // 図形管理を2秒ごとに実行
-        setInterval(manageFloatingShapes, 2000);
+        // 図形管理を1秒ごとに実行（頻度を上げる）
+        setInterval(manageFloatingShapes, 1000);
 
         // 100ミリ秒ごとに色を更新（時刻更新と同じ頻度）
         setInterval(updateColorsGradually, 100);
@@ -521,8 +526,10 @@
             // 初回カラー更新を開始
             updateColorsGradually();
             
-            // 初回図形を表示
+            // 初回図形を複数表示
             createFloatingShape();
+            setTimeout(() => createFloatingShape(), 500);
+            setTimeout(() => createFloatingShape(), 1000);
             
             // 情報表示の更新
             let infoText = '100ミリ秒精度 | ダブルクリックでフルスクリーン | 連続カラー変化 | 浮遊図形';
