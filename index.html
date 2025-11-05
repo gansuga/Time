@@ -80,6 +80,47 @@
             color: #ff9800;
         }
 
+        /* 背景アニメーション図形 */
+        .floating-shape {
+            position: absolute;
+            font-size: 2rem;
+            opacity: 0.15;
+            pointer-events: none;
+            animation: float linear infinite;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+            z-index: -1;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) rotate(0deg) scale(0.5);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.15;
+            }
+            90% {
+                opacity: 0.15;
+            }
+            100% {
+                transform: translateY(-10vh) rotate(360deg) scale(1.2);
+                opacity: 0;
+            }
+        }
+
+        /* レスポンシブ対応 */
+        @media (max-width: 768px) {
+            .floating-shape {
+                font-size: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .floating-shape {
+                font-size: 1rem;
+            }
+        }
+
         @media (max-width: 768px) {
             .time-container {
                 padding: 10px;
@@ -253,6 +294,94 @@
             colorTime++;
         }
 
+        // 背景アニメーション図形管理
+        const shapes = ['□', '○', '☆', '△', '◇', '♦', '♠', '♣', '♥', '✦', '✧', '※'];
+        const activeShapes = [];
+        const maxShapes = 5;
+        const minShapes = 1;
+
+        function createFloatingShape() {
+            if (activeShapes.length >= maxShapes) return;
+
+            const shape = document.createElement('div');
+            shape.className = 'floating-shape';
+            
+            // ランダムな図形を選択
+            const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
+            shape.textContent = randomShape;
+            
+            // ランダムな開始位置（横方向）
+            const startX = Math.random() * window.innerWidth;
+            shape.style.left = startX + 'px';
+            
+            // ランダムなアニメーション時間（10-25秒）
+            const duration = 10 + Math.random() * 15;
+            shape.style.animationDuration = duration + 's';
+            
+            // ランダムな横方向の動き
+            const endX = startX + (Math.random() - 0.5) * 400; // -200px～+200px
+            const keyframeName = `float-${Date.now()}-${Math.random()}`;
+            
+            // カスタムキーフレームを動的に作成
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes ${keyframeName} {
+                    0% {
+                        transform: translateX(0) translateY(100vh) rotate(0deg) scale(0.5);
+                        opacity: 0;
+                    }
+                    10% {
+                        opacity: 0.15;
+                    }
+                    90% {
+                        opacity: 0.15;
+                    }
+                    100% {
+                        transform: translateX(${endX - startX}px) translateY(-10vh) rotate(${360 + Math.random() * 360}deg) scale(${1 + Math.random() * 0.5});
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+            shape.style.animationName = keyframeName;
+            
+            // ランダムな色味（現在の色相ベース）
+            const currentHue = (colorTime * colorSpeed) % 360;
+            const shapeHue = (currentHue + Math.random() * 120 - 60) % 360;
+            shape.style.color = `hsl(${shapeHue}, 60%, 70%)`;
+            
+            document.body.appendChild(shape);
+            activeShapes.push({element: shape, style: style});
+            
+            // アニメーション終了時にクリーンアップ
+            shape.addEventListener('animationend', () => {
+                if (shape.parentNode) {
+                    shape.parentNode.removeChild(shape);
+                }
+                if (style.parentNode) {
+                    style.parentNode.removeChild(style);
+                }
+                const index = activeShapes.findIndex(s => s.element === shape);
+                if (index > -1) {
+                    activeShapes.splice(index, 1);
+                }
+            });
+        }
+
+        function manageFloatingShapes() {
+            // 最小数を下回っている場合は即座に追加
+            if (activeShapes.length < minShapes) {
+                createFloatingShape();
+            }
+            // ランダムに新しい図形を追加（25%の確率）
+            else if (activeShapes.length < maxShapes && Math.random() < 0.25) {
+                createFloatingShape();
+            }
+        }
+
+        // 図形管理を2秒ごとに実行
+        setInterval(manageFloatingShapes, 2000);
+
         // 100ミリ秒ごとに色を更新（時刻更新と同じ頻度）
         setInterval(updateColorsGradually, 100);
 
@@ -364,8 +493,11 @@
             // 初回カラー更新を開始
             updateColorsGradually();
             
+            // 初回図形を表示
+            createFloatingShape();
+            
             // 情報表示の更新
-            let infoText = '100ミリ秒精度 | ダブルクリックでフルスクリーン | 連続カラー変化';
+            let infoText = '100ミリ秒精度 | ダブルクリックでフルスクリーン | 連続カラー変化 | 浮遊図形';
             if ('wakeLock' in navigator) {
                 infoText += ' | 画面オフ防止中';
             }
