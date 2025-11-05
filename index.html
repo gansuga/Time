@@ -20,6 +20,7 @@
             justify-content: center;
             overflow: hidden;
             color: white;
+            transition: background 2s ease-in-out, color 1s ease-in-out;
         }
 
         .time-container {
@@ -32,6 +33,7 @@
             margin-bottom: 20px;
             opacity: 0.9;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            transition: color 1s ease-in-out, text-shadow 1s ease-in-out;
         }
 
         .time-display {
@@ -39,11 +41,13 @@
             font-weight: bold;
             text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
             line-height: 1.1;
+            transition: color 1s ease-in-out, text-shadow 1s ease-in-out;
         }
 
         .milliseconds {
             color: #ffeb3b;
             font-weight: normal;
+            transition: color 1s ease-in-out;
         }
 
         .info {
@@ -53,6 +57,7 @@
             font-size: 0.9rem;
             opacity: 0.7;
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+            transition: color 1s ease-in-out;
         }
 
         .wake-lock-status {
@@ -141,7 +146,123 @@
             document.getElementById('timeDisplay').innerHTML = timeStr;
         }
 
-        // 100ミリ秒ごとに更新
+        // カラーテーマ管理
+        const colorThemes = [
+            {
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                text: '#ffffff',
+                accent: '#ffeb3b',
+                shadow: 'rgba(0, 0, 0, 0.5)'
+            },
+            {
+                background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                text: '#ffffff',
+                accent: '#ffd54f',
+                shadow: 'rgba(0, 0, 0, 0.4)'
+            },
+            {
+                background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                text: '#ffffff',
+                accent: '#ff6b6b',
+                shadow: 'rgba(0, 0, 0, 0.3)'
+            },
+            {
+                background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                text: '#2c3e50',
+                accent: '#e74c3c',
+                shadow: 'rgba(255, 255, 255, 0.7)'
+            },
+            {
+                background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                text: '#2c3e50',
+                accent: '#8e44ad',
+                shadow: 'rgba(255, 255, 255, 0.6)'
+            },
+            {
+                background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+                text: '#2c3e50',
+                accent: '#e67e22',
+                shadow: 'rgba(255, 255, 255, 0.8)'
+            },
+            {
+                background: 'linear-gradient(135deg, #d299c2 0%, #fef9d7 100%)',
+                text: '#34495e',
+                accent: '#9b59b6',
+                shadow: 'rgba(255, 255, 255, 0.7)'
+            },
+            {
+                background: 'linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)',
+                text: '#ffffff',
+                accent: '#f39c12',
+                shadow: 'rgba(0, 0, 0, 0.4)'
+            },
+            {
+                background: 'linear-gradient(135deg, #fdbb2d 0%, #22c1c3 100%)',
+                text: '#ffffff',
+                accent: '#e74c3c',
+                shadow: 'rgba(0, 0, 0, 0.5)'
+            },
+            {
+                background: 'linear-gradient(135deg, #ee9ca7 0%, #ffdde1 100%)',
+                text: '#2c3e50',
+                accent: '#8e44ad',
+                shadow: 'rgba(255, 255, 255, 0.6)'
+            },
+            {
+                background: 'linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%)',
+                text: '#ffffff',
+                accent: '#f1c40f',
+                shadow: 'rgba(0, 0, 0, 0.4)'
+            },
+            {
+                background: 'linear-gradient(135deg, #cc2b5e 0%, #753a88 100%)',
+                text: '#ffffff',
+                accent: '#f39c12',
+                shadow: 'rgba(0, 0, 0, 0.6)'
+            }
+        ];
+
+        let currentThemeIndex = 0;
+
+        function updateColors() {
+            const theme = colorThemes[currentThemeIndex];
+            const body = document.body;
+            const dateDisplay = document.getElementById('dateDisplay');
+            const timeDisplay = document.getElementById('timeDisplay');
+            const info = document.querySelector('.info');
+            const millisecondElements = document.querySelectorAll('.milliseconds');
+
+            // 背景とメインテキスト色を変更
+            body.style.background = theme.background;
+            body.style.color = theme.text;
+            
+            if (dateDisplay) {
+                dateDisplay.style.color = theme.text;
+                dateDisplay.style.textShadow = `2px 2px 4px ${theme.shadow}`;
+            }
+            
+            if (timeDisplay) {
+                timeDisplay.style.color = theme.text;
+                timeDisplay.style.textShadow = `3px 3px 6px ${theme.shadow}`;
+            }
+            
+            if (info) {
+                info.style.color = theme.text;
+            }
+
+            // ミリ秒部分のアクセント色を変更
+            millisecondElements.forEach(el => {
+                el.style.color = theme.accent;
+            });
+
+            // 次のテーマに進む
+            currentThemeIndex = (currentThemeIndex + 1) % colorThemes.length;
+        }
+
+        // 15秒ごとにカラーテーマを変更
+        setInterval(updateColors, 15000);
+
+        // 100ミリ秒ごとに時刻更新
         setInterval(updateTime, 100);
         
         // 初回実行
@@ -246,8 +367,11 @@
             // Wake Lock を開始
             await requestWakeLock();
             
+            // 初回カラーテーマ適用
+            updateColors();
+            
             // 情報表示の更新
-            let infoText = '100ミリ秒精度 | ダブルクリックでフルスクリーン';
+            let infoText = '100ミリ秒精度 | ダブルクリックでフルスクリーン | 15秒毎に色変化';
             if ('wakeLock' in navigator) {
                 infoText += ' | 画面オフ防止中';
             }
@@ -255,7 +379,7 @@
             
             setTimeout(() => {
                 info.textContent = originalText;
-            }, 4000);
+            }, 5000);
         });
     </script>
 </body>
