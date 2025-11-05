@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>時刻表示 - 100ミリ秒単位</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Courier New', monospace;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            color: white;
+        }
+
+        .time-container {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .date-display {
+            font-size: clamp(1.5rem, 4vw, 3rem);
+            margin-bottom: 20px;
+            opacity: 0.9;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .time-display {
+            font-size: clamp(3rem, 12vw, 8rem);
+            font-weight: bold;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
+            line-height: 1.1;
+        }
+
+        .milliseconds {
+            color: #ffeb3b;
+            font-weight: normal;
+        }
+
+        .info {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            font-size: 0.9rem;
+            opacity: 0.7;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        @media (max-width: 768px) {
+            .time-container {
+                padding: 10px;
+            }
+            
+            .info {
+                bottom: 10px;
+                right: 10px;
+                font-size: 0.8rem;
+            }
+        }
+
+        /* アニメーション効果 */
+        .time-display {
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
+            }
+            to {
+                text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5), 0 0 20px rgba(255, 255, 255, 0.2);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="time-container">
+        <div class="date-display" id="dateDisplay"></div>
+        <div class="time-display" id="timeDisplay"></div>
+    </div>
+    
+    <div class="info">
+        100ミリ秒精度
+    </div>
+
+    <script>
+        function updateTime() {
+            const now = new Date();
+            
+            // 日付の表示
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+            const weekday = weekdays[now.getDay()];
+            
+            const dateStr = `${year}年${month}月${day}日 (${weekday})`;
+            
+            // 時刻の表示（100ミリ秒単位）
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const milliseconds = String(Math.floor(now.getMilliseconds() / 100));
+            
+            const timeStr = `${hours}:${minutes}:${seconds}.<span class="milliseconds">${milliseconds}</span>`;
+            
+            document.getElementById('dateDisplay').textContent = dateStr;
+            document.getElementById('timeDisplay').innerHTML = timeStr;
+        }
+
+        // 100ミリ秒ごとに更新
+        setInterval(updateTime, 100);
+        
+        // 初回実行
+        updateTime();
+
+        // フルスクリーン切り替え機能（ダブルクリックで切り替え）
+        document.addEventListener('dblclick', function() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log('フルスクリーン表示に失敗しました:', err);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        });
+
+        // ESCキーでフルスクリーン終了
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && document.fullscreenElement) {
+                document.exitFullscreen();
+            }
+        });
+
+        // ページ読み込み完了時にフルスクリーン表示の説明を短時間表示
+        window.addEventListener('load', function() {
+            const info = document.querySelector('.info');
+            const originalText = info.textContent;
+            info.textContent = '100ミリ秒精度 | ダブルクリックでフルスクリーン';
+            
+            setTimeout(() => {
+                info.textContent = originalText;
+            }, 3000);
+        });
+    </script>
+</body>
+</html>
