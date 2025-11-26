@@ -95,6 +95,17 @@
             color: #ffffff;
         }
 
+        /* スピードライン背景キャンバス */
+        #speedCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
 
 
         /* レスポンシブ対応 */
@@ -138,6 +149,8 @@
     </style>
 </head>
 <body>
+    <canvas id="speedCanvas"></canvas>
+    
     <div class="time-container">
         <div class="date-display" id="dateDisplay"></div>
         <div class="time-display" id="timeDisplay"></div>
@@ -515,6 +528,204 @@
             }
         });
 
+        // ====== スピードライン背景アニメーション ======
+        const speedCanvas = document.getElementById('speedCanvas');
+        const ctx = speedCanvas.getContext('2d');
+        let animationRunning = true;
+        let resizeTimeout = null;
+        
+        // キャンバスサイズを設定
+        function resizeCanvas() {
+            speedCanvas.width = window.innerWidth;
+            speedCanvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        
+        // デバウンス付きリサイズイベント
+        window.addEventListener('resize', function() {
+            if (resizeTimeout) {
+                clearTimeout(resizeTimeout);
+            }
+            resizeTimeout = setTimeout(resizeCanvas, 100);
+        });
+        
+        // パーティクル（スピードライン）クラス
+        class SpeedLine {
+            constructor() {
+                this.reset();
+            }
+            
+            reset() {
+                // 画面中心からの角度
+                this.angle = Math.random() * Math.PI * 2;
+                // 中心からの距離（小さい値からスタート）
+                this.distance = Math.random() * 50;
+                // 速度
+                this.speed = 2 + Math.random() * 8;
+                // 線の長さ
+                this.length = 20 + Math.random() * 80;
+                // 色の明るさ
+                this.brightness = 0.3 + Math.random() * 0.7;
+                // 色相（現在の背景色に合わせて変化）
+                this.hue = Math.random() * 60 - 30; // -30 ~ 30度のオフセット
+            }
+            
+            update() {
+                // 距離を増加（加速効果）
+                this.distance += this.speed * (1 + this.distance * 0.003);
+                
+                // 画面外に出たらリセット
+                const maxDistance = Math.max(speedCanvas.width, speedCanvas.height);
+                if (this.distance > maxDistance) {
+                    this.reset();
+                }
+            }
+            
+            draw(baseHue) {
+                const centerX = speedCanvas.width / 2;
+                const centerY = speedCanvas.height / 2;
+                
+                // 現在の位置
+                const x = centerX + Math.cos(this.angle) * this.distance;
+                const y = centerY + Math.sin(this.angle) * this.distance;
+                
+                // 線の終点（後ろ側）
+                const tailDistance = Math.max(0, this.distance - this.length);
+                const tailX = centerX + Math.cos(this.angle) * tailDistance;
+                const tailY = centerY + Math.sin(this.angle) * tailDistance;
+                
+                // グラデーションを作成
+                const gradient = ctx.createLinearGradient(tailX, tailY, x, y);
+                const hue = (baseHue + this.hue + 360) % 360;
+                gradient.addColorStop(0, `hsla(${hue}, 80%, 70%, 0)`);
+                gradient.addColorStop(1, `hsla(${hue}, 80%, 70%, ${this.brightness * 0.6})`);
+                
+                // 線を描画
+                ctx.beginPath();
+                ctx.moveTo(tailX, tailY);
+                ctx.lineTo(x, y);
+                ctx.strokeStyle = gradient;
+                ctx.lineWidth = 1 + this.brightness * 2;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+            }
+        }
+        
+        // スピードラインの配列
+        const speedLines = [];
+        const numSpeedLines = 100;
+        
+        // キャンバスサイズが確定してから初期化
+        const initialMaxDistance = Math.max(speedCanvas.width || window.innerWidth, speedCanvas.height || window.innerHeight);
+        for (let i = 0; i < numSpeedLines; i++) {
+            const line = new SpeedLine();
+            // 初期配置をランダムに分散
+            line.distance = Math.random() * initialMaxDistance;
+            speedLines.push(line);
+        }
+        
+        // 流れ星のようなパーティクル
+        class FlowParticle {
+            constructor() {
+                this.reset();
+            }
+            
+            reset() {
+                // 画面の左側からスタート
+                this.x = -10;
+                this.y = Math.random() * speedCanvas.height;
+                // 右方向への速度
+                this.vx = 8 + Math.random() * 15;
+                // わずかな上下の動き
+                this.vy = (Math.random() - 0.5) * 2;
+                // 尾の長さ
+                this.tailLength = 30 + Math.random() * 70;
+                // サイズ
+                this.size = 1 + Math.random() * 2;
+                // 明るさ
+                this.brightness = 0.4 + Math.random() * 0.6;
+            }
+            
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                // 画面外に出たらリセット
+                if (this.x > speedCanvas.width + 100) {
+                    this.reset();
+                }
+            }
+            
+            draw(baseHue) {
+                const tailX = this.x - this.tailLength;
+                
+                // グラデーションを作成
+                const gradient = ctx.createLinearGradient(tailX, this.y, this.x, this.y);
+                const hue = (baseHue + 180) % 360; // 補色系
+                gradient.addColorStop(0, `hsla(${hue}, 70%, 80%, 0)`);
+                gradient.addColorStop(1, `hsla(${hue}, 70%, 80%, ${this.brightness * 0.5})`);
+                
+                // 線を描画
+                ctx.beginPath();
+                ctx.moveTo(tailX, this.y);
+                ctx.lineTo(this.x, this.y);
+                ctx.strokeStyle = gradient;
+                ctx.lineWidth = this.size;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+            }
+        }
+        
+        // 流れパーティクルの配列
+        const flowParticles = [];
+        const numFlowParticles = 30;
+        
+        // キャンバスサイズが確定してから初期化
+        const initialWidth = speedCanvas.width || window.innerWidth;
+        for (let i = 0; i < numFlowParticles; i++) {
+            const particle = new FlowParticle();
+            // 初期配置をランダムに分散
+            particle.x = Math.random() * initialWidth;
+            flowParticles.push(particle);
+        }
+        
+        // アニメーションループ
+        function animateSpeedBackground() {
+            if (!animationRunning) {
+                requestAnimationFrame(animateSpeedBackground);
+                return;
+            }
+            
+            // キャンバスをクリア（半透明でトレイル効果）
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, speedCanvas.width, speedCanvas.height);
+            
+            // 現在の背景色相を取得
+            const baseHue = (colorTime * colorSpeed) % 360;
+            
+            // スピードラインを更新・描画
+            speedLines.forEach(line => {
+                line.update();
+                line.draw(baseHue);
+            });
+            
+            // 流れパーティクルを更新・描画
+            flowParticles.forEach(particle => {
+                particle.update();
+                particle.draw(baseHue);
+            });
+            
+            requestAnimationFrame(animateSpeedBackground);
+        }
+        
+        // ページの可視性に応じてアニメーションを制御
+        document.addEventListener('visibilitychange', function() {
+            animationRunning = document.visibilityState === 'visible';
+        });
+        
+        // アニメーション開始
+        animateSpeedBackground();
+
         // ページ読み込み完了時の処理
         window.addEventListener('load', async function() {
             const info = document.querySelector('.info');
@@ -532,7 +743,7 @@
             setTimeout(() => createFloatingShape(), 1000);
             
             // 情報表示の更新
-            let infoText = '100ミリ秒精度 | ダブルクリックでフルスクリーン | 連続カラー変化 | 浮遊図形';
+            let infoText = '100ミリ秒精度 | ダブルクリックでフルスクリーン | 疾走感アニメーション';
             if ('wakeLock' in navigator) {
                 infoText += ' | 画面オフ防止中';
             }
