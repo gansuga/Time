@@ -12,7 +12,7 @@
         }
 
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #000000;
             font-family: 'Courier New', monospace;
             height: 100vh;
             display: flex;
@@ -20,7 +20,6 @@
             justify-content: center;
             overflow: hidden;
             color: white;
-            transition: background 0.5s ease-out, color 0.3s ease-out;
         }
 
         .time-container {
@@ -34,22 +33,21 @@
             font-size: clamp(1.5rem, 4vw, 3rem);
             margin-bottom: 20px;
             opacity: 0.9;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-            transition: color 0.3s ease-out, text-shadow 0.3s ease-out;
+            color: #ffffff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
         }
 
         .time-display {
             font-size: clamp(3rem, 12vw, 8rem);
             font-weight: bold;
-            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
+            color: #ffffff;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.8);
             line-height: 1.1;
-            transition: color 0.3s ease-out, text-shadow 0.3s ease-out;
         }
 
         .milliseconds {
             color: #ffeb3b;
             font-weight: normal;
-            transition: color 0.3s ease-out;
         }
 
         .info {
@@ -58,8 +56,8 @@
             right: 20px;
             font-size: 0.9rem;
             opacity: 0.7;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-            transition: color 0.3s ease-out;
+            color: #ffffff;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
             z-index: 20;
         }
 
@@ -189,110 +187,12 @@
             document.getElementById('timeDisplay').innerHTML = timeStr;
         }
 
-        // 連続的なカラー変化システム
+        // 連続的なカラー変化システム（スピードラインの色変化用）
         let colorTime = 0;
         const colorSpeed = 0.2; // 色変化の速度（小さいほどゆっくり）
 
-        // HSLを使って滑らかに色を生成
-        function hslToRgb(h, s, l) {
-            s /= 100;
-            l /= 100;
-            const c = (1 - Math.abs(2 * l - 1)) * s;
-            const x = c * (1 - Math.abs((h / 60) % 2 - 1));
-            const m = l - c/2;
-            let r = 0, g = 0, b = 0;
-
-            if (0 <= h && h < 60) {
-                r = c; g = x; b = 0;
-            } else if (60 <= h && h < 120) {
-                r = x; g = c; b = 0;
-            } else if (120 <= h && h < 180) {
-                r = 0; g = c; b = x;
-            } else if (180 <= h && h < 240) {
-                r = 0; g = x; b = c;
-            } else if (240 <= h && h < 300) {
-                r = x; g = 0; b = c;
-            } else if (300 <= h && h < 360) {
-                r = c; g = 0; b = x;
-            }
-
-            r = Math.round((r + m) * 255);
-            g = Math.round((g + m) * 255);
-            b = Math.round((b + m) * 255);
-
-            return `${r},${g},${b}`;
-        }
-
-        // 明度から文字色を自動判定
-        function getTextColor(r, g, b) {
-            // 明度計算（WCAG基準）
-            const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-            return luminance > 0.5 ? '#2c3e50' : '#ffffff';
-        }
-
-        // アクセント色を生成（メイン色の補色系）
-        function getAccentColor(hue) {
-            const accentHue = (hue + 180) % 360; // 補色
-            return `hsl(${accentHue}, 80%, 60%)`;
-        }
-
         function updateColorsGradually() {
-            // 時間経過とともに色相を変化（0-360度を循環）
-            const hue1 = (colorTime * colorSpeed) % 360;
-            const hue2 = (colorTime * colorSpeed + 60) % 360; // 60度ずらした色相
-
-            // 彩度と明度も微妙に変化させる
-            const saturation1 = 70 + Math.sin(colorTime * colorSpeed * 0.01) * 20;
-            const saturation2 = 60 + Math.cos(colorTime * colorSpeed * 0.01) * 25;
-            const lightness1 = 55 + Math.sin(colorTime * colorSpeed * 0.015) * 15;
-            const lightness2 = 45 + Math.cos(colorTime * colorSpeed * 0.012) * 20;
-
-            // RGB値を取得
-            const rgb1 = hslToRgb(hue1, saturation1, lightness1);
-            const rgb2 = hslToRgb(hue2, saturation2, lightness2);
-
-            // グラデーション背景を生成
-            const background = `linear-gradient(135deg, rgb(${rgb1}) 0%, rgb(${rgb2}) 100%)`;
-
-            // 平均的な明度から文字色を決定
-            const [r1, g1, b1] = rgb1.split(',').map(Number);
-            const [r2, g2, b2] = rgb2.split(',').map(Number);
-            const avgR = (r1 + r2) / 2;
-            const avgG = (g1 + g2) / 2;
-            const avgB = (b1 + b2) / 2;
-            
-            const textColor = getTextColor(avgR, avgG, avgB);
-            const accentColor = getAccentColor(hue1);
-            const shadowColor = textColor === '#ffffff' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.7)';
-
-            // 要素に適用
-            const body = document.body;
-            const dateDisplay = document.getElementById('dateDisplay');
-            const timeDisplay = document.getElementById('timeDisplay');
-            const info = document.querySelector('.info');
-            const millisecondElements = document.querySelectorAll('.milliseconds');
-
-            body.style.background = background;
-            body.style.color = textColor;
-            
-            if (dateDisplay) {
-                dateDisplay.style.color = textColor;
-                dateDisplay.style.textShadow = `2px 2px 4px ${shadowColor}`;
-            }
-            
-            if (timeDisplay) {
-                timeDisplay.style.color = textColor;
-                timeDisplay.style.textShadow = `3px 3px 6px ${shadowColor}`;
-            }
-            
-            if (info) {
-                info.style.color = textColor;
-            }
-
-            millisecondElements.forEach(el => {
-                el.style.color = accentColor;
-            });
-
+            // colorTimeをインクリメントしてスピードラインの色変化に使用
             colorTime++;
         }
 
